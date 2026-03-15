@@ -122,14 +122,16 @@ function playSilentUnlock() {
 
 function wakeWebAudio() {
     if (!audioCtx || audioCtx.state !== 'running') return;
-    try {
-        const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.02, audioCtx.sampleRate);
-        const src = audioCtx.createBufferSource();
-        src.buffer = buf;
-        src.connect(audioCtx.destination);
-        src.start(0);
-        src.stop(audioCtx.currentTime + 0.02);
-    } catch (_) {}
+    setTimeout(() => {
+        try {
+            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.02, audioCtx.sampleRate);
+            const src = audioCtx.createBufferSource();
+            src.buffer = buf;
+            src.connect(audioCtx.destination);
+            src.start(0);
+            src.stop(audioCtx.currentTime + 0.02);
+        } catch (_) {}
+    }, 0);
 }
 
 function unlockAudio() {
@@ -860,7 +862,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (typeof requestIdleCallback !== 'undefined') {
                 requestIdleCallback(run, { timeout: 80 });
             } else {
-                run();
+                setTimeout(run, 0);
             }
         }
 
