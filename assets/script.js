@@ -331,6 +331,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnTutorialStart = document.getElementById('btn-tutorial-start');
     const configTab = document.getElementById('config-tab');
     const sidebarColumn = document.getElementById('sidebar-column');
+    const liveAnnouncer = document.getElementById('live-announcer');
+    let previousLives = initialLives;
+
+    function announceForScreenReader(text) {
+        if (liveAnnouncer && text) {
+            liveAnnouncer.textContent = text;
+        }
+    }
 
     // Onboarding: PT se idioma for português (ex.: Brasil), senão EN
     const lang = (navigator.language || navigator.userLanguage || '').toLowerCase();
@@ -449,7 +457,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function resetGame() {
-        score = 0; lives = initialLives; combo = 0; bestCombo = 0;
+        score = 0; lives = initialLives; previousLives = initialLives; combo = 0; bestCombo = 0;
         spawnRate = 0; currentLevel = 0;
         fruits.length = 0; bombs.length = 0;
         ninjaParticles.length = 0; bladeTrails.length = 0;
@@ -478,6 +486,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentLevel = newLvl;
             levelUpName = LEVELS[newLvl].name;
             levelUpTimer = 1;
+            announceForScreenReader(isPt ? `Subiu de nível: ${levelUpName}.` : `Level up: ${levelUpName}.`);
+        }
+        if (lives < previousLives) {
+            previousLives = lives;
+            const msg = isPt
+                ? `Você perdeu uma vida. ${lives} ${lives === 1 ? 'vida restante' : 'vidas restantes'}.`
+                : `You lost a life. ${lives} ${lives === 1 ? 'life left' : 'lives left'}.`;
+            announceForScreenReader(msg);
         }
         const lvl = LEVELS[getLevel()];
         elLevel.textContent = `LV${getLevel() + 1} ${lvl.name}`;
@@ -489,6 +505,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             statCombo.textContent = bestCombo;
             statMissed.textContent = totalMissed;
             overScreen.classList.remove('hidden');
+            announceForScreenReader(isPt ? `Fim de jogo. Pontuação final: ${score}.` : `Game over. Final score: ${score}.`);
             sfxGameOver();
             stopMusic();
         }

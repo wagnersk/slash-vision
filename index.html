@@ -20,17 +20,18 @@
         </header>
         <div class="main-layout">
             <div class="vision-column game-grid">
-                <div class="vision-card shared-canvas-container">
+                <div class="vision-card shared-canvas-container" role="region" aria-label="Área do jogo. Mostre a mão na câmera para cortar as frutas.">
                     <video id="video" autoplay playsinline muted style="display:none"></video>
-                    <div id="hud-ninja" class="game-hud">
+                    <div id="hud-ninja" class="game-hud" role="status" aria-label="Placar do jogo">
                         <div class="hud-badge game-score-badge">
                             <span class="score-label">SCORE</span>
-                            <span id="game-score">0</span>
+                            <span id="game-score" aria-live="polite" aria-atomic="true">0</span>
                         </div>
-                        <div id="game-level" class="hud-badge game-level-badge">LV1 Apprentice</div>
-                        <div id="game-lives" class="hud-badge game-lives-badge">🍉🍉🍉🍉🍉🍉🍉</div>
+                        <div id="game-level" class="hud-badge game-level-badge" aria-live="polite" aria-atomic="true">LV1 Apprentice</div>
+                        <div id="game-lives" class="hud-badge game-lives-badge" aria-live="polite" aria-atomic="true">🍉🍉🍉🍉🍉🍉🍉</div>
                     </div>
-                    <canvas id="canvas"></canvas>
+                    <div id="live-announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true" aria-relevant="text"></div>
+                    <canvas id="canvas" aria-hidden="true"></canvas>
                     <div id="tutorial-overlay" class="tutorial-overlay" role="dialog" aria-labelledby="tutorial-title" aria-describedby="tutorial-steps">
                         <h2 id="tutorial-title" class="tutorial-title">Como jogar</h2>
                         <ol id="tutorial-steps" class="tutorial-steps">
