@@ -7,7 +7,7 @@
 
 ## Sobre
 
-**Slash Vision** é um jogo estilo Fruit Ninja que usa a câmera e detecção de mãos em tempo real. Tudo roda no navegador — sem servidor, sem backend. A detecção de mãos usa [MediaPipe Hand Landmarker](https://developers.google.com/mediapipe/solutions/vision/hand_landmarker) via CDN.
+**Slash Vision** é um jogo estilo Fruit Ninja que usa a câmera e detecção de mãos em tempo real. Tudo roda no navegador — sem servidor, sem backend. A detecção de mãos usa [MediaPipe Hand Landmarker](https://developers.google.com/mediapipe/solutions/vision/hand_landmarker) a partir de arquivos locais em `assets/mediapipe/` (sem CDN).
 
 ## Stack
 
@@ -26,6 +26,14 @@
 
 ## Rodar localmente
 
+Na primeira vez (ou após clonar), baixe os arquivos do MediaPipe direto por URL (sem `npm install`):
+
+```bash
+node prepare-mediapipe.js
+```
+
+Depois suba o servidor:
+
 ```bash
 npx serve -p 3333
 ```
@@ -36,18 +44,20 @@ Acesse `http://localhost:3333`
 
 O projeto é um site estático. O `vercel.json` já está configurado.
 
-1. Acesse [vercel.com](https://vercel.com) e importe o repositório
-2. Não altere Build Command nem Output Directory
-3. Clique em **Deploy**
+1. Rode `node prepare-mediapipe.js` uma vez, faça commit da pasta `assets/mediapipe/` e dê push. Na Vercel não precisa de build nem `node_modules` — só arquivos estáticos.
+2. Acesse [vercel.com](https://vercel.com) e importe o repositório.
+3. Clique em **Deploy**.
 
 ## Estrutura
 
 ```
-├── index.html          # Página principal
+├── index.html            # Página principal
 ├── assets/
-│   ├── script.js       # Game engine + detecção de mãos
-│   └── style.css       # Estilos
-├── vercel.json         # Config de deploy estático
+│   ├── script.js        # Game engine + detecção de mãos
+│   ├── style.css        # Estilos
+│   └── mediapipe/       # MediaPipe local (vision_bundle, wasm, modelo)
+├── prepare-mediapipe.js # Baixa MediaPipe por URL → assets/mediapipe/ (sem npm)
+├── vercel.json          # Config de deploy estático
 └── .gitignore
 ```
 

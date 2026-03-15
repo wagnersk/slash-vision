@@ -9,6 +9,7 @@ let fpsLastTime = performance.now();
 let fpsValue = 0;
 
 const DETECTION_INTERVAL_MS = 100;
+const DETECTION_INTERVAL_MS_NO_HAND = 50;
 let lastLabels = [];
 
 let bladeTargets = [];
@@ -30,7 +31,7 @@ const COMBO_DECAY_MS = 1200;
 const BLADE_HIT_EXTRA = 32;
 const CUT_ANIMATION_MS = 600;
 const EXPLODE_ANIMATION_MS = 500;
-const MAX_PARTICLES = 120;
+const MAX_PARTICLES = 180;
 
 const COMBO_MESSAGES = [
     { min: 2, text: 'NICE!', color: '#00dfd8', size: 36 },
@@ -71,6 +72,8 @@ let ninjaParticles = [], floatingTexts = [];
 let screenFlash = 0;
 let totalCuts = 0, totalMissed = 0;
 let shakeX = 0, shakeY = 0;
+let shakeTimer = 0;
+const BLADE_HIT_EXTRA_BOMB = 48;
 let comboMsgTimer = 0, comboMsgText = '', comboMsgColor = '#fff', comboMsgSize = 48;
 let currentLevel = 0;
 let levelUpTimer = 0, levelUpName = '';
@@ -328,7 +331,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnTutorialStart = document.getElementById('btn-tutorial-start');
     const configTab = document.getElementById('config-tab');
     const sidebarColumn = document.getElementById('sidebar-column');
-    const configDrawer = document.getElementById('config-drawer');
 
     // Onboarding: PT se idioma for português (ex.: Brasil), senão EN
     const lang = (navigator.language || navigator.userLanguage || '').toLowerCase();
@@ -411,7 +413,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ninjaParticles.length = 0; bladeTrails.length = 0;
         floatingTexts.length = 0;
         screenFlash = 0; totalCuts = 0; totalMissed = 0;
-        shakeX = 0; shakeY = 0; comboMsgTimer = 0;
+        shakeX = 0; shakeY = 0; shakeTimer = 0; comboMsgTimer = 0;
         levelUpTimer = 0; levelUpName = '';
         gameState = 'PLAYING';
         if (musicEnabled) startMusic();
@@ -506,14 +508,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const tip = trail[trail.length - 1];
             const prev = trail[trail.length - 2];
             const dx = tip.x - prev.x, dy = tip.y - prev.y;
-            if (dx * dx + dy * dy < 9) continue;
+            const movedEnough = dx * dx + dy * dy >= 1;
 
             for (let fi = fruits.length - 1; fi >= 0; fi--) {
                 const f = fruits[fi];
                 if (!f.active || f.cutAt) continue;
                 const fdx = tip.x - f.x, fdy = tip.y - f.y;
                 const dist = f.radius + BLADE_HIT_EXTRA;
-                if (fdx * fdx + fdy * fdy < dist * dist) {
+                if (movedEnough && fdx * fdx + fdy * fdy < dist * dist) {
                     f.active = false;
                     f.cutAt = performance.now();
                     f.cutAngle = Math.atan2(dy, dx);
@@ -549,30 +551,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const b = bombs[bi];
                 if (!b.active || b.cutAt) continue;
                 const bdx = tip.x - b.x, bdy = tip.y - b.y;
-                const dist = b.radius + BLADE_HIT_EXTRA;
-                if (bdx * bdx + bdy * bdy < dist * dist) {
+                const distBomb = b.radius + BLADE_HIT_EXTRA_BOMB;
+                if (bdx * bdx + bdy * bdy < distBomb * distBomb) {
                     b.active = false;
                     b.cutAt = performance.now();
                     b.cutAngle = Math.atan2(dy, dx);
                     sfxBomb();
 
-                    screenFlash = 0.5;
-                    shakeX = (Math.random() - 0.5) * 18;
-                    shakeY = (Math.random() - 0.5) * 12;
-                    setTimeout(() => { shakeX = 0; shakeY = 0; }, 140);
+                    screenFlash = 1.5;
+                    shakeTimer = 2;
 
-                    const pCount = Math.min(16, MAX_PARTICLES - ninjaParticles.length);
+                    const pCount = Math.min(70, MAX_PARTICLES - ninjaParticles.length);
                     for (let i = 0; i < pCount; i++) {
-                        const angle = (Math.PI * 2 * i) / pCount + Math.random() * 0.4;
-                        const speed = 5 + Math.random() * 8;
+                        const angle = (Math.PI * 2 * i) / pCount + Math.random() * 0.8;
+                        const speed = 18 + Math.random() * 22;
                         ninjaParticles.push({
                             x: b.x, y: b.y,
-                            vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 3,
-                            color: i & 1 ? '#ff4d4d' : '#ffaa00',
-                            life: 1, r: 4 + Math.random() * 8, type: 1,
+                            vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 8,
+                            color: i % 3 === 0 ? '#ff1111' : i % 3 === 1 ? '#ff8800' : '#fff',
+                            life: 1, r: 8 + Math.random() * 18, type: 1,
                         });
                     }
-                    addFloatingText(b.x, b.y - 30, 'BOMB!', '#ff4d4d', 30);
+                    addFloatingText(b.x, b.y - 25, 'BOMB!', '#ff0000', 42);
                     lives--; combo = 0;
                     updateHUD();
                 }
@@ -602,7 +602,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (ft.life <= 0) floatingTexts.splice(i, 1);
         }
 
-        if (screenFlash > 0) screenFlash -= 0.04;
+        if (screenFlash > 0) screenFlash -= 0.012;
+        if (shakeTimer > 0) shakeTimer -= 0.005;
         if (comboMsgTimer > 0) comboMsgTimer -= 0.018;
 
         const grav = getEffectiveLevelConfig().gravity;
@@ -644,7 +645,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         updatePhysics(now);
         checkCollisions();
 
+        if (elScore) elScore.textContent = score;
+
         ctx.save();
+        if (shakeTimer > 0) {
+            const intensity = 95 * shakeTimer;
+            shakeX = (Math.random() - 0.5) * 2 * intensity;
+            shakeY = (Math.random() - 0.5) * 2 * intensity;
+        } else {
+            shakeX = 0;
+            shakeY = 0;
+        }
         ctx.translate(shakeX, shakeY);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -839,8 +850,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (screenFlash > 0) {
-            ctx.globalAlpha = Math.min(screenFlash, 0.3);
-            ctx.fillStyle = screenFlash > 0.35 ? '#ff4d4d' : '#fff';
+            const isBombFlash = screenFlash > 0.5;
+            ctx.globalAlpha = isBombFlash ? Math.min(screenFlash, 0.82) : Math.min(screenFlash, 0.3);
+            ctx.fillStyle = isBombFlash ? '#ff1111' : (screenFlash > 0.35 ? '#ff4d4d' : '#fff');
             ctx.fillRect(0, 0, cw, ch);
             ctx.globalAlpha = 1;
         }
@@ -856,20 +868,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    const MEDIAPIPE_BASE = '/assets/mediapipe';
+
     async function initHandLandmarker() {
         try {
-            const vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.mjs');
+            const vision = await import(`${MEDIAPIPE_BASE}/vision_bundle.mjs`);
             const { HandLandmarker, FilesetResolver } = vision;
-            const wasm = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm');
+            const wasm = await FilesetResolver.forVisionTasks(`${MEDIAPIPE_BASE}/wasm`);
             handLandmarker = await HandLandmarker.createFromOptions(wasm, {
                 baseOptions: {
-                    modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+                    modelAssetPath: `${MEDIAPIPE_BASE}/hand_landmarker.task`,
                 },
                 numHands: 2,
                 runningMode: 'VIDEO',
-                minHandDetectionConfidence: 0.5,
-                minHandPresenceConfidence: 0.5,
-                minTrackingConfidence: 0.5,
+                minHandDetectionConfidence: 0.35,
+                minHandPresenceConfidence: 0.35,
+                minTrackingConfidence: 0.35,
             });
             startDetectionLoop();
         } catch (err) {
@@ -886,7 +900,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             const now = performance.now();
-            if (now - lastTime >= DETECTION_INTERVAL_MS) {
+            const interval = (bladeTargets.length === 0 ? DETECTION_INTERVAL_MS_NO_HAND : DETECTION_INTERVAL_MS);
+            if (now - lastTime >= interval) {
                 lastTime = now;
                 try {
                     const result = handLandmarker.detectForVideo(video, Date.now());
@@ -1042,7 +1057,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Primeira visita: câmera/jogo só iniciam ao clicar em "Começar". Quem já viu o tutorial inicia na hora.
 });
 
 })();

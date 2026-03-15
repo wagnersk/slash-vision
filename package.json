@@ -1,4 +1,7 @@
 {
   "name": "slash-vision",
-  "private": true
+  "private": true,
+  "scripts": {
+    "prepare:mediapipe": "node prepare-mediapipe.js"
+  }
 }
