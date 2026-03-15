@@ -558,8 +558,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     b.cutAngle = Math.atan2(dy, dx);
                     sfxBomb();
 
-                    screenFlash = 1.5;
-                    shakeTimer = 2;
+                    screenFlash = 1.0;
 
                     const pCount = Math.min(70, MAX_PARTICLES - ninjaParticles.length);
                     for (let i = 0; i < pCount; i++) {
@@ -602,7 +601,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (ft.life <= 0) floatingTexts.splice(i, 1);
         }
 
-        if (screenFlash > 0) screenFlash -= 0.012;
+        if (screenFlash > 0) screenFlash -= (screenFlash > 0.5 ? 0.06 : 0.012);
         if (shakeTimer > 0) shakeTimer -= 0.005;
         if (comboMsgTimer > 0) comboMsgTimer -= 0.018;
 
