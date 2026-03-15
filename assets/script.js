@@ -10,8 +10,6 @@ let fpsValue = 0;
 
 const DETECTION_INTERVAL_MS = 100;
 let lastLabels = [];
-let lastDetectionTime = 0;
-let detectionPending = false;
 
 let bladeTargets = [];
 let bladeCurrent = [];
@@ -109,10 +107,10 @@ function ensureAudio() {
     updateAudioGains();
 }
 
-// Silent WAV (minimal) — usado no celular para liberar áudio no primeiro toque
+// Silent WAV (minimal) — no celular (iOS/Android) o primeiro play() precisa ser no MESMO gesto do toque
 const SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
 
-function playSilentUnlock() {
+function playSilentUnlockSync() {
     try {
         const a = new Audio(SILENT_WAV);
         a.volume = 0;
@@ -120,41 +118,24 @@ function playSilentUnlock() {
     } catch (_) {}
 }
 
-function wakeWebAudio() {
-    if (!audioCtx || audioCtx.state !== 'running') return;
-    setTimeout(() => {
-        try {
-            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.02, audioCtx.sampleRate);
-            const src = audioCtx.createBufferSource();
-            src.buffer = buf;
-            src.connect(audioCtx.destination);
-            src.start(0);
-            src.stop(audioCtx.currentTime + 0.02);
-        } catch (_) {}
-    }, 0);
-}
-
 function unlockAudio() {
     if (audioUnlocked) return;
-    // No celular (iOS/Android) o áudio só funciona após um gesto; criar contexto no gesto.
     ensureAudio();
-    playSilentUnlock();
+    playSilentUnlockSync();
     if (audioCtx.state === 'suspended') {
         audioCtx.resume().then(() => {
             audioUnlocked = true;
-            wakeWebAudio();
             musicPlaying = false;
             hideSoundHint();
-            if (musicEnabled && gameState === 'PLAYING') startMusic();
+            if (musicEnabled && gameState === 'PLAYING') setTimeout(startMusic, 0);
         }).catch(() => {
             audioUnlocked = true;
             hideSoundHint();
         });
     } else {
         audioUnlocked = true;
-        wakeWebAudio();
         hideSoundHint();
-        if (musicEnabled && gameState === 'PLAYING') startMusic();
+        if (musicEnabled && gameState === 'PLAYING') setTimeout(startMusic, 0);
     }
 }
 
@@ -791,9 +772,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 minHandPresenceConfidence: 0.5,
                 minTrackingConfidence: 0.5,
             });
+            startDetectionLoop();
         } catch (err) {
             console.error('MediaPipe init error:', err);
         }
+    }
+
+    function startDetectionLoop() {
+        function tick() {
+            if (!handLandmarker || !video || !video.videoWidth) {
+                setTimeout(tick, DETECTION_INTERVAL_MS);
+                return;
+            }
+            try {
+                const result = handLandmarker.detectForVideo(video, video.currentTime * 1000);
+                processDetectionResult(result);
+            } catch (e) {
+                if (e.message && !e.message.includes('out of range')) console.warn(e);
+            }
+            setTimeout(tick, DETECTION_INTERVAL_MS);
+        }
+        setTimeout(tick, 0);
     }
 
     function processDetectionResult(result) {
@@ -846,25 +845,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         ctx.scale(-1, 1);
         ctx.drawImage(video, -w, 0, w, h);
         ctx.restore();
-
-        if (handLandmarker && !detectionPending && (now - lastDetectionTime >= DETECTION_INTERVAL_MS)) {
-            lastDetectionTime = now;
-            detectionPending = true;
-            const run = () => {
-                try {
-                    const result = handLandmarker.detectForVideo(video, video.currentTime * 1000);
-                    processDetectionResult(result);
-                } catch (e) {
-                    if (e.message && !e.message.includes('out of range')) console.warn(e);
-                }
-                detectionPending = false;
-            };
-            if (typeof requestIdleCallback !== 'undefined') {
-                requestIdleCallback(run, { timeout: 80 });
-            } else {
-                setTimeout(run, 0);
-            }
-        }
 
         if (bladeTargets.length > 0) {
             while (bladeTrails.length < bladeTargets.length) bladeTrails.push([]);
