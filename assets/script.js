@@ -330,6 +330,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sidebarColumn = document.getElementById('sidebar-column');
     const configDrawer = document.getElementById('config-drawer');
 
+    // Onboarding: PT se idioma for português (ex.: Brasil), senão EN
+    const lang = (navigator.language || navigator.userLanguage || '').toLowerCase();
+    const isPt = lang.startsWith('pt');
+    const onboarding = {
+        title: isPt ? 'Como jogar' : 'How to play',
+        step1: isPt ? 'Mostre a mão na câmera — o ponto azul segue seu dedo.' : 'Show your hand to the camera — the blue point follows your finger.',
+        step2: isPt ? 'Mova o dedo sobre as frutas para cortá-las e somar pontos.' : 'Move your finger over the fruits to slice them and score points.',
+        step3: isPt ? 'Evite cortar as bombas (💣) ou você perde vida.' : 'Avoid slicing the bombs (💣) or you lose a life.',
+        credit: isPt ? 'Jogo feito por Wagner Sobreira' : 'Game by Wagner Sobreira',
+        startBtn: isPt ? 'Começar' : 'Start',
+    };
+    const elTutorialTitle = document.getElementById('tutorial-title');
+    const elTutorialSteps = document.getElementById('tutorial-steps');
+    const elTutorialCredit = document.querySelector('.tutorial-credit');
+    if (elTutorialTitle) elTutorialTitle.textContent = onboarding.title;
+    if (elTutorialSteps && elTutorialSteps.children.length >= 3) {
+        elTutorialSteps.children[0].innerHTML = '<span class="tutorial-step-num">1</span> ' + onboarding.step1;
+        elTutorialSteps.children[1].innerHTML = '<span class="tutorial-step-num">2</span> ' + onboarding.step2;
+        elTutorialSteps.children[2].innerHTML = '<span class="tutorial-step-num">3</span> ' + onboarding.step3;
+    }
+    if (elTutorialCredit) elTutorialCredit.textContent = onboarding.credit;
+    if (btnTutorialStart) btnTutorialStart.textContent = onboarding.startBtn;
+
     let cameraStarted = false;
 
     function startCameraAndGame() {
