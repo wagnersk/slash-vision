@@ -26,14 +26,6 @@
 
 ## Rodar localmente
 
-Na primeira vez (ou após clonar), baixe os arquivos do MediaPipe direto por URL (sem `npm install`):
-
-```bash
-node prepare-mediapipe.js
-```
-
-Depois suba o servidor:
-
 ```bash
 npx serve -p 3333
 ```
@@ -44,20 +36,19 @@ Acesse `http://localhost:3333`
 
 O projeto é um site estático. O `vercel.json` já está configurado.
 
-1. Rode `node prepare-mediapipe.js` uma vez, faça commit da pasta `assets/mediapipe/` e dê push. Na Vercel não precisa de build nem `node_modules` — só arquivos estáticos.
+1. Faça commit da pasta `assets/mediapipe/` e dê push. Deploy 100% estático (sem build).
 2. Acesse [vercel.com](https://vercel.com) e importe o repositório.
 3. Clique em **Deploy**.
 
 ## Estrutura
 
 ```
-├── index.html            # Página principal
+├── index.html      # Página principal
 ├── assets/
-│   ├── script.js        # Game engine + detecção de mãos
-│   ├── style.css        # Estilos
-│   └── mediapipe/       # MediaPipe local (vision_bundle, wasm, modelo)
-├── prepare-mediapipe.js # Baixa MediaPipe por URL → assets/mediapipe/ (sem npm)
-├── vercel.json          # Config de deploy estático
+│   ├── script.js   # Game engine + detecção de mãos
+│   ├── style.css   # Estilos
+│   └── mediapipe/  # MediaPipe local (vision_bundle, wasm, modelo)
+├── vercel.json     # Config de deploy estático
 └── .gitignore
 ```
 
