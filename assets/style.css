@@ -403,6 +403,123 @@ h1 {
     letter-spacing: 2px;
 }
 
+/* ── Tutorial inicial ── */
+.tutorial-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(5, 5, 5, 0.94);
+    backdrop-filter: blur(14px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 60;
+    padding: 1.5rem;
+    box-sizing: border-box;
+    animation: fadeIn 0.4s ease;
+}
+
+.tutorial-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+}
+
+.tutorial-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: clamp(1.5rem, 5vw, 2.2rem);
+    font-weight: 800;
+    color: var(--primary);
+    text-shadow: 0 0 30px var(--primary-glow);
+    margin: 0 0 1.25rem;
+    letter-spacing: 1px;
+    text-align: center;
+}
+
+.tutorial-steps {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem;
+    max-width: 320px;
+    counter-reset: step;
+}
+
+.tutorial-steps li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: clamp(0.9rem, 2.5vw, 1.05rem);
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.tutorial-step-num {
+    flex-shrink: 0;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), #ff6b6b);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px var(--primary-glow);
+}
+
+.tutorial-credit {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.55);
+    margin: 0 0 1rem;
+    letter-spacing: 0.5px;
+}
+
+.btn-tutorial-start {
+    padding: 0.9rem 2.5rem;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: white;
+    background: linear-gradient(135deg, var(--accent), #ffc933);
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 6px 24px rgba(255, 183, 3, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+    letter-spacing: 0.5px;
+}
+
+.btn-tutorial-start:hover,
+.btn-tutorial-start:focus {
+    transform: scale(1.05);
+    box-shadow: 0 8px 28px rgba(255, 183, 3, 0.5);
+}
+
+.btn-tutorial-start:active {
+    transform: scale(0.98);
+}
+
+.btn-show-tutorial {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--secondary);
+    background: rgba(0, 223, 216, 0.15);
+    border: 1px solid rgba(0, 223, 216, 0.5);
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s, color 0.2s;
+}
+
+.btn-show-tutorial:hover {
+    background: rgba(0, 223, 216, 0.25);
+    color: #fff;
+}
+
 .hidden {
     opacity: 0;
     pointer-events: none;

@@ -324,9 +324,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     const statCombo = document.getElementById('stat-combo');
     const statMissed = document.getElementById('stat-missed');
     const btnRestart = document.getElementById('btn-restart');
+    const tutorialOverlay = document.getElementById('tutorial-overlay');
+    const btnTutorialStart = document.getElementById('btn-tutorial-start');
     const configTab = document.getElementById('config-tab');
     const sidebarColumn = document.getElementById('sidebar-column');
     const configDrawer = document.getElementById('config-drawer');
+
+    let cameraStarted = false;
+
+    function startCameraAndGame() {
+        if (cameraStarted) return;
+        cameraStarted = true;
+        unlockAudio();
+        startCamera();
+    }
+
+    // Onboarding sempre aparece ao carregar; câmera e jogo só depois de clicar em "Começar"
+    if (btnTutorialStart && tutorialOverlay) {
+        btnTutorialStart.addEventListener('click', () => {
+            tutorialOverlay.classList.add('hidden');
+            startCameraAndGame();
+        });
+    }
 
     if (configTab && sidebarColumn) {
         configTab.addEventListener('click', () => {
@@ -354,6 +373,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     livesValue.textContent = initialLives;
     landmarksCb.onchange = (e) => { drawDebugLandmarks = e.target.checked; };
+
+    const btnShowTutorial = document.getElementById('btn-show-tutorial');
+    if (btnShowTutorial && tutorialOverlay) {
+        btnShowTutorial.addEventListener('click', () => {
+            tutorialOverlay.classList.remove('hidden');
+        });
+    }
 
     function resetGame() {
         score = 0; lives = initialLives; combo = 0; bestCombo = 0;
@@ -993,10 +1019,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    startCamera();
-
-    // Som já ativado ao carregar (sem exigir toque)
-    unlockAudio();
+    // Primeira visita: câmera/jogo só iniciam ao clicar em "Começar". Quem já viu o tutorial inicia na hora.
 });
 
 })();

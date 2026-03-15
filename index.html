@@ -31,6 +31,16 @@
                         <div id="game-lives" class="hud-badge game-lives-badge">🍉🍉🍉🍉🍉🍉🍉</div>
                     </div>
                     <canvas id="canvas"></canvas>
+                    <div id="tutorial-overlay" class="tutorial-overlay" role="dialog" aria-labelledby="tutorial-title" aria-describedby="tutorial-steps">
+                        <h2 id="tutorial-title" class="tutorial-title">Como jogar</h2>
+                        <ol id="tutorial-steps" class="tutorial-steps">
+                            <li><span class="tutorial-step-num">1</span> Mostre a mão na câmera — o ponto azul segue seu dedo.</li>
+                            <li><span class="tutorial-step-num">2</span> Mova o dedo sobre as frutas para cortá-las e somar pontos.</li>
+                            <li><span class="tutorial-step-num">3</span> Evite cortar as bombas (💣) ou você perde vida.</li>
+                        </ol>
+                        <p class="tutorial-credit">Jogo feito por Wagner Sobreira</p>
+                        <button type="button" id="btn-tutorial-start" class="btn-tutorial-start">Começar</button>
+                    </div>
                     <div id="game-over-screen" class="game-over-overlay hidden">
                         <h2>GAME OVER</h2>
                         <div class="final-score-label">FINAL SCORE</div>
@@ -96,6 +106,9 @@
                     </div>
                     <div class="settings-control setting-group">
                         <label><input type="checkbox" id="draw-landmarks-cb"> Debug: rastreio das mãos</label>
+                    </div>
+                    <div class="settings-control setting-group">
+                        <button type="button" id="btn-show-tutorial" class="btn-show-tutorial">Ver tutorial novamente</button>
                     </div>
                     </div>
                 </div>
