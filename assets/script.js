@@ -827,17 +827,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         requestAnimationFrame(renderLoop);
     }
 
+    function showCameraError(msg) {
+        const container = document.querySelector('.vision-card.shared-canvas-container');
+        if (!container) return;
+        let el = document.getElementById('camera-error-msg');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'camera-error-msg';
+            el.className = 'camera-error-msg';
+            container.appendChild(el);
+        }
+        el.textContent = msg;
+        el.classList.remove('hidden');
+    }
+
     async function startCamera() {
         try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showCameraError('Seu navegador não suporta câmera. Use Chrome ou Safari.');
+                return;
+            }
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { width: 640, height: 480, frameRate: { ideal: 30 } },
             });
             video.srcObject = stream;
             await video.play();
-            await initHandLandmarker();
             renderLoop();
+            initHandLandmarker().catch((err) => console.warn('MediaPipe (mãos) carregando depois:', err));
         } catch (err) {
             console.error('Camera error:', err);
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                showCameraError('Câmera bloqueada. Permita o acesso e recarregue a página.');
+            } else if (err.name === 'NotFoundError') {
+                showCameraError('Nenhuma câmera encontrada.');
+            } else {
+                showCameraError('Erro ao ligar a câmera. Recarregue a página.');
+            }
         }
     }
 
