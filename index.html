@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slash Vision — Corte com as mãos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+    <main class="app-container">
+        <header>
+            <h1 class="game-title">Slash Vision</h1>
+            <p class="subtitle">Corte as frutas com as mãos</p>
+        </header>
+        <div class="main-layout">
+            <div class="vision-column game-grid">
+                <div class="vision-card shared-canvas-container">
+                    <video id="video" autoplay playsinline muted style="display:none"></video>
+                    <div id="hud-ninja" class="game-hud">
+                        <div class="hud-badge game-score-badge">
+                            <span class="score-label">SCORE</span>
+                            <span id="game-score">0</span>
+                        </div>
+                        <div id="game-level" class="hud-badge game-level-badge">LV1 Apprentice</div>
+                        <div id="game-lives" class="hud-badge game-lives-badge">🍉🍉🍉🍉🍉🍉🍉</div>
+                    </div>
+                    <canvas id="canvas"></canvas>
+                    <div id="game-over-screen" class="game-over-overlay hidden">
+                        <h2>GAME OVER</h2>
+                        <div class="final-score-label">FINAL SCORE</div>
+                        <div id="final-score" class="final-score-display">0</div>
+                        <div class="game-over-stats">
+                            <div class="stat-item">
+                                <span id="stat-cuts" class="stat-value">0</span>
+                                <span class="stat-label">Fruits Cut</span>
+                            </div>
+                            <div class="stat-item">
+                                <span id="stat-combo" class="stat-value">0</span>
+                                <span class="stat-label">Best Combo</span>
+                            </div>
+                            <div class="stat-item">
+                                <span id="stat-missed" class="stat-value">0</span>
+                                <span class="stat-label">Missed</span>
+                            </div>
+                        </div>
+                        <button type="button" id="btn-restart" class="btn-replay">PLAY AGAIN</button>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-column controls-section">
+                <div class="info-card">
+                    <h3>Configurações do jogo</h3>
+                    <div id="fps-counter" class="fps-inline">
+                        <span class="fps-label">Performance</span>
+                        <span id="fps-value">0</span>
+                        <span class="fps-unit">FPS</span>
+                    </div>
+                    <div class="setting-group">
+                        <label>Volume geral</label>
+                        <div class="quality-control">
+                            <input type="range" id="volume-slider" min="0" max="100" value="80">
+                            <span id="volume-value">80%</span>
+                        </div>
+                    </div>
+                    <div class="settings-control">
+                        <label><input type="checkbox" id="music-cb" checked> Música</label>
+                    </div>
+                    <div class="settings-control">
+                        <label><input type="checkbox" id="sfx-cb" checked> Efeitos sonoros</label>
+                    </div>
+                    <div class="settings-control difficulty-row setting-group">
+                        <label for="difficulty-select">Dificuldade</label>
+                        <select id="difficulty-select">
+                            <option value="easy">Fácil</option>
+                            <option value="normal" selected>Normal</option>
+                            <option value="hard">Difícil</option>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <label>Vidas iniciais</label>
+                        <div class="quality-control">
+                            <input type="range" id="lives-slider" min="3" max="10" value="7">
+                            <span id="lives-value">7</span>
+                        </div>
+                    </div>
+                    <div class="settings-control setting-group">
+                        <label><input type="checkbox" id="draw-landmarks-cb"> Debug: rastreio das mãos</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="/assets/script.js"></script>
+</body>
+</html>
