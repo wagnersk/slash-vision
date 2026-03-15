@@ -17,7 +17,11 @@ const LERP_SPEED = 0.35;
 
 let gameState = 'PLAYING';
 let bladeTrails = [];
+let bladeTrailAlphas = [];
 const TRAIL_LENGTH = 14;
+const MIN_CUT_DIST = 6;
+const TRAIL_FADE_IN_SPEED = 0.22;
+const TRAIL_FADE_OUT_SPEED = 0.09;
 
 const NINJA_LIVES_DEFAULT = 7;
 const FRUIT_EMOJIS = ['🍉', '🍎', '🍋', '🍊', '🍇', '🍓', '🍑', '🥝', '🍌', '🫐'];
@@ -107,22 +111,36 @@ function ensureAudio() {
     updateAudioGains();
 }
 
-// Silent WAV (minimal) — no celular (iOS/Android) o primeiro play() precisa ser no MESMO gesto do toque
-const SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+// Silent WAV (minimal) — blob URL funciona melhor que data URI no celular (iOS/Android)
+const SILENT_WAV_B64 = 'UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+let SILENT_AUDIO_URL = null;
+function getSilentAudioUrl() {
+    if (SILENT_AUDIO_URL) return SILENT_AUDIO_URL;
+    try {
+        const bin = atob(SILENT_WAV_B64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const blob = new Blob([bytes], { type: 'audio/wav' });
+        SILENT_AUDIO_URL = URL.createObjectURL(blob);
+        return SILENT_AUDIO_URL;
+    } catch (_) {
+        return 'data:audio/wav;base64,' + SILENT_WAV_B64;
+    }
+}
 
 function playSilentUnlockSync() {
     try {
-        const a = new Audio(SILENT_WAV);
-        a.volume = 0;
+        const a = new Audio(getSilentAudioUrl());
+        a.volume = 0.001;
         a.play().catch(() => {});
     } catch (_) {}
 }
 
 function unlockAudio() {
     if (audioUnlocked) return;
-    ensureAudio();
     playSilentUnlockSync();
-    if (audioCtx.state === 'suspended') {
+    ensureAudio();
+    if (audioCtx && audioCtx.state === 'suspended') {
         audioCtx.resume().then(() => {
             audioUnlocked = true;
             musicPlaying = false;
@@ -718,25 +736,57 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         ctx.restore();
 
+        const trailAlphaBase = (ti) => (bladeTrailAlphas[ti] ?? 0);
+
         for (let ti = 0; ti < bladeTrails.length; ti++) {
             const trail = bladeTrails[ti];
-            if (trail.length < 2) continue;
-            for (let i = 1; i < trail.length; i++) {
-                const t = i / trail.length;
-                ctx.beginPath();
-                ctx.moveTo(trail[i - 1].x, trail[i - 1].y);
-                ctx.lineTo(trail[i].x, trail[i].y);
-                ctx.lineWidth = 3 + t * 12;
-                ctx.lineCap = 'round';
-                ctx.strokeStyle = `rgba(0, 223, 216, ${t * 0.85})`;
-                ctx.stroke();
+            const alpha = trailAlphaBase(ti);
+            if (trail.length >= 2) {
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                for (let i = 1; i < trail.length; i++) {
+                    const t = i / trail.length;
+                    ctx.beginPath();
+                    ctx.moveTo(trail[i - 1].x, trail[i - 1].y);
+                    ctx.lineTo(trail[i].x, trail[i].y);
+                    ctx.lineWidth = 3 + t * 12;
+                    ctx.lineCap = 'round';
+                    ctx.strokeStyle = `rgba(0, 223, 216, ${t * 0.85})`;
+                    ctx.stroke();
+                }
+                ctx.restore();
             }
-            const tip = trail[trail.length - 1];
+        }
+
+        for (let bi = 0; bi < bladeCurrent.length; bi++) {
+            const c = bladeCurrent[bi];
+            if (c.x === 0 && c.y === 0) continue;
+            const alpha = Math.max(trailAlphaBase(bi), 0.2);
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            const pulse = 1 + Math.sin(now * 0.012) * 0.08;
+            const rOuter = 14 * pulse;
+            const rMid = 8 * pulse;
+            const rInner = 4 * pulse;
+            const g = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, rOuter);
+            g.addColorStop(0, 'rgba(0, 223, 216, 0.85)');
+            g.addColorStop(rInner / rOuter, 'rgba(0, 223, 216, 0.4)');
+            g.addColorStop(0.6, 'rgba(0, 223, 216, 0.12)');
+            g.addColorStop(1, 'rgba(0, 223, 216, 0)');
             ctx.beginPath();
-            ctx.arc(tip.x, tip.y, 5, 0, Math.PI * 2);
-            ctx.fillStyle = '#fff';
-            ctx.globalAlpha = 1;
+            ctx.arc(c.x, c.y, rOuter, 0, Math.PI * 2);
+            ctx.fillStyle = g;
             ctx.fill();
+            ctx.strokeStyle = 'rgba(0, 223, 216, 0.9)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, rMid, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, rInner, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
         }
 
         if (screenFlash > 0) {
@@ -779,20 +829,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function startDetectionLoop() {
-        function tick() {
+        if (!handLandmarker || !video) return;
+        let lastTime = 0;
+        function detect() {
             if (!handLandmarker || !video || !video.videoWidth) {
-                setTimeout(tick, DETECTION_INTERVAL_MS);
+                requestAnimationFrame(detect);
                 return;
             }
-            try {
-                const result = handLandmarker.detectForVideo(video, video.currentTime * 1000);
-                processDetectionResult(result);
-            } catch (e) {
-                if (e.message && !e.message.includes('out of range')) console.warn(e);
+            const now = performance.now();
+            if (now - lastTime >= DETECTION_INTERVAL_MS) {
+                lastTime = now;
+                try {
+                    const result = handLandmarker.detectForVideo(video, Date.now());
+                    processDetectionResult(result);
+                } catch (_) {}
             }
-            setTimeout(tick, DETECTION_INTERVAL_MS);
+            requestAnimationFrame(detect);
         }
-        setTimeout(tick, 0);
+        requestAnimationFrame(detect);
+    }
+
+    function setupPointerBlade() {
+        // Som já ativado automaticamente ao carregar; sem necessidade de toque para desbloquear
     }
 
     function processDetectionResult(result) {
@@ -847,18 +905,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         ctx.restore();
 
         if (bladeTargets.length > 0) {
-            while (bladeTrails.length < bladeTargets.length) bladeTrails.push([]);
-            if (bladeTrails.length > bladeTargets.length) bladeTrails.length = bladeTargets.length;
+            while (bladeTrails.length < bladeTargets.length) {
+                bladeTrails.push([]);
+                bladeTrailAlphas.push(0);
+            }
+            if (bladeTrails.length > bladeTargets.length) {
+                bladeTrails.length = bladeTargets.length;
+                bladeTrailAlphas.length = bladeTargets.length;
+            }
             for (let idx = 0; idx < bladeTargets.length; idx++) {
                 const t = bladeTargets[idx], c = bladeCurrent[idx];
                 c.x += (t.x - c.x) * LERP_SPEED;
                 c.y += (t.y - c.y) * LERP_SPEED;
-                bladeTrails[idx].push({ x: c.x, y: c.y });
-                if (bladeTrails[idx].length > TRAIL_LENGTH) bladeTrails[idx].shift();
+                const trail = bladeTrails[idx];
+                const last = trail.length > 0 ? trail[trail.length - 1] : null;
+                const dist = last ? Math.hypot(c.x - last.x, c.y - last.y) : MIN_CUT_DIST;
+                let alpha = bladeTrailAlphas[idx] ?? 0;
+                if (dist >= MIN_CUT_DIST) {
+                    trail.push({ x: c.x, y: c.y });
+                    if (trail.length > TRAIL_LENGTH) trail.shift();
+                    bladeTrailAlphas[idx] = Math.min(1, alpha + TRAIL_FADE_IN_SPEED);
+                } else if (trail.length > 0) {
+                    trail.shift();
+                    bladeTrailAlphas[idx] = Math.max(0, alpha - TRAIL_FADE_OUT_SPEED);
+                }
             }
         } else {
             for (let i = 0; i < bladeTrails.length; i++) {
                 if (bladeTrails[i].length > 0) bladeTrails[i].shift();
+                bladeTrailAlphas[i] = Math.max(0, (bladeTrailAlphas[i] ?? 0) - TRAIL_FADE_OUT_SPEED);
             }
         }
 
@@ -904,7 +979,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             video.srcObject = stream;
             await video.play();
             renderLoop();
-            initHandLandmarker().catch((err) => console.warn('MediaPipe (mãos) carregando depois:', err));
+            setupPointerBlade();
+            await initHandLandmarker();
         } catch (err) {
             console.error('Camera error:', err);
             if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
@@ -919,10 +995,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     startCamera();
 
-    document.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
-    document.addEventListener('click', unlockAudio, { once: true });
-    const soundHint = document.getElementById('sound-unlock-hint');
-    if (soundHint) soundHint.addEventListener('click', unlockAudio, { once: true });
+    // Som já ativado ao carregar (sem exigir toque)
+    unlockAudio();
 });
 
 })();
