@@ -31,6 +31,7 @@
                         <div id="game-lives" class="hud-badge game-lives-badge">🍉🍉🍉🍉🍉🍉🍉</div>
                     </div>
                     <canvas id="canvas"></canvas>
+                    <button type="button" id="sound-unlock-hint" class="sound-unlock-hint" aria-live="polite">Toque para ativar o som</button>
                     <div id="game-over-screen" class="game-over-overlay hidden">
                         <h2>GAME OVER</h2>
                         <div class="final-score-label">FINAL SCORE</div>
@@ -53,9 +54,14 @@
                     </div>
                 </div>
             </div>
-            <div class="sidebar-column controls-section">
-                <div class="info-card">
-                    <h3>Configurações do jogo</h3>
+            <div class="sidebar-column" id="sidebar-column">
+                <button type="button" class="config-tab" id="config-tab" aria-expanded="false" aria-controls="config-drawer">
+                    <span class="config-tab-label">Configurações</span>
+                    <span class="config-tab-icon" aria-hidden="true">▲</span>
+                </button>
+                <div class="config-drawer" id="config-drawer" role="region" aria-label="Configurações do jogo">
+                    <div class="info-card controls-section">
+                        <h3>Configurações do jogo</h3>
                     <div id="fps-counter" class="fps-inline">
                         <span class="fps-label">Performance</span>
                         <span id="fps-value">0</span>
@@ -91,6 +97,7 @@
                     </div>
                     <div class="settings-control setting-group">
                         <label><input type="checkbox" id="draw-landmarks-cb"> Debug: rastreio das mãos</label>
+                    </div>
                     </div>
                 </div>
             </div>

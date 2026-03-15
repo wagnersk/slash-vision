@@ -97,6 +97,7 @@ let audioCtx = null;
 let musicGain = null;
 let sfxGain = null;
 let musicPlaying = false;
+let audioUnlocked = false;
 
 function ensureAudio() {
     if (audioCtx) return;
@@ -106,6 +107,58 @@ function ensureAudio() {
     sfxGain = audioCtx.createGain();
     sfxGain.connect(audioCtx.destination);
     updateAudioGains();
+}
+
+// Silent WAV (minimal) — usado no celular para liberar áudio no primeiro toque
+const SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+
+function playSilentUnlock() {
+    try {
+        const a = new Audio(SILENT_WAV);
+        a.volume = 0;
+        a.play().catch(() => {});
+    } catch (_) {}
+}
+
+function wakeWebAudio() {
+    if (!audioCtx || audioCtx.state !== 'running') return;
+    try {
+        const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.02, audioCtx.sampleRate);
+        const src = audioCtx.createBufferSource();
+        src.buffer = buf;
+        src.connect(audioCtx.destination);
+        src.start(0);
+        src.stop(audioCtx.currentTime + 0.02);
+    } catch (_) {}
+}
+
+function unlockAudio() {
+    if (audioUnlocked) return;
+    // No celular (iOS/Android) o áudio só funciona após um gesto; criar contexto no gesto.
+    ensureAudio();
+    playSilentUnlock();
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume().then(() => {
+            audioUnlocked = true;
+            wakeWebAudio();
+            musicPlaying = false;
+            hideSoundHint();
+            if (musicEnabled && gameState === 'PLAYING') startMusic();
+        }).catch(() => {
+            audioUnlocked = true;
+            hideSoundHint();
+        });
+    } else {
+        audioUnlocked = true;
+        wakeWebAudio();
+        hideSoundHint();
+        if (musicEnabled && gameState === 'PLAYING') startMusic();
+    }
+}
+
+function hideSoundHint() {
+    const el = document.getElementById('sound-unlock-hint');
+    if (el) el.classList.add('hidden');
 }
 
 function updateAudioGains() {
@@ -120,6 +173,7 @@ function connectOsc(osc, gain) {
 }
 
 function sfxSlice() {
+    if (!audioUnlocked) return;
     ensureAudio();
     const t = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
@@ -134,6 +188,7 @@ function sfxSlice() {
 }
 
 function sfxCombo(level) {
+    if (!audioUnlocked) return;
     ensureAudio();
     const t = audioCtx.currentTime;
     const baseFreq = 400 + level * 80;
@@ -149,6 +204,7 @@ function sfxCombo(level) {
 }
 
 function sfxBomb() {
+    if (!audioUnlocked) return;
     ensureAudio();
     const t = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
@@ -174,6 +230,7 @@ function sfxBomb() {
 }
 
 function sfxMiss() {
+    if (!audioUnlocked) return;
     ensureAudio();
     const t = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
@@ -188,6 +245,7 @@ function sfxMiss() {
 }
 
 function sfxGameOver() {
+    if (!audioUnlocked) return;
     ensureAudio();
     const t = audioCtx.currentTime;
     const freqs = [400, 350, 280, 200];
@@ -207,6 +265,7 @@ const MUSIC_NOTES = [261.6, 329.6, 392, 440, 392, 329.6];
 
 function startMusic() {
     if (musicPlaying) return;
+    if (!audioUnlocked) return;
     ensureAudio();
     musicPlaying = true;
     let noteIdx = 0;
@@ -264,6 +323,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const statCombo = document.getElementById('stat-combo');
     const statMissed = document.getElementById('stat-missed');
     const btnRestart = document.getElementById('btn-restart');
+    const configTab = document.getElementById('config-tab');
+    const sidebarColumn = document.getElementById('sidebar-column');
+    const configDrawer = document.getElementById('config-drawer');
+
+    if (configTab && sidebarColumn) {
+        configTab.addEventListener('click', () => {
+            const open = sidebarColumn.classList.toggle('open');
+            configTab.setAttribute('aria-expanded', open);
+        });
+    }
 
     volumeSlider.oninput = (e) => {
         volumeGain = parseInt(e.target.value, 10) / 100;
@@ -866,8 +935,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    startMusic();
     startCamera();
+
+    document.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
+    document.addEventListener('click', unlockAudio, { once: true });
+    const soundHint = document.getElementById('sound-unlock-hint');
+    if (soundHint) soundHint.addEventListener('click', unlockAudio, { once: true });
 });
 
 })();
