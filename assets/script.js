@@ -794,10 +794,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ctx.restore();
         }
 
-        ctx.restore();
-
         const trailAlphaBase = (ti) => (bladeTrailAlphas[ti] ?? 0);
-
         for (let ti = 0; ti < bladeTrails.length; ti++) {
             const trail = bladeTrails[ti];
             const alpha = trailAlphaBase(ti);
@@ -817,7 +814,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ctx.restore();
             }
         }
-
         for (let bi = 0; bi < bladeCurrent.length; bi++) {
             const c = bladeCurrent[bi];
             if (c.x === 0 && c.y === 0) continue;
@@ -848,6 +844,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             ctx.fill();
             ctx.restore();
         }
+
+        ctx.restore();
 
         if (screenFlash > 0) {
             const isBombFlash = screenFlash > 0.5;
