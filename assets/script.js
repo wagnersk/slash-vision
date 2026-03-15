@@ -357,15 +357,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let cameraStarted = false;
 
-    function startCameraAndGame(streamPromise) {
-        if (cameraStarted) return;
-        cameraStarted = true;
-        // Não chamar unlockAudio() aqui: AudioContext.resume() consome a "transient activation"
-        // e no Safari isso impede o diálogo de permissão da câmera de aparecer (WebKit User Activation API).
-        startCamera(streamPromise);
+    function onCameraError(err) {
+        console.error('Camera error:', err);
+        if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
+            const msg = !window.isSecureContext
+                ? 'No Safari a câmera só funciona em HTTPS. Abra o jogo pelo link da Vercel (https://...) ou use localhost.'
+                : 'Câmera bloqueada. Em Ajustes do Safari > Câmera, permita este site e recarregue a página.';
+            showCameraError(msg);
+        } else if (err && err.name === 'NotFoundError') {
+            showCameraError('Nenhuma câmera encontrada.');
+        } else {
+            showCameraError('Erro ao ligar a câmera. Recarregue a página.');
+        }
     }
 
-    // Safari: getUserMedia no mesmo gesto do usuário. No Safari a câmera só funciona em HTTPS (contexto seguro).
+    // Safari: chamar getUserMedia no mesmo gesto e usar .then()/.catch() no próprio handler
+    // (evita async/await que em alguns Safari pode perder user activation antes do diálogo).
     if (btnTutorialStart && tutorialOverlay) {
         btnTutorialStart.addEventListener('click', () => {
             if (cameraStarted) return;
@@ -375,13 +382,35 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                startCameraAndGame(null);
+                showCameraError('Seu navegador não suporta câmera. Use Chrome ou Safari.');
                 return;
             }
-            const streamPromise = navigator.mediaDevices.getUserMedia({
+            // iOS Safari: setAttribute no <video> antes de getUserMedia (recomendado na doc).
+            if (video) {
+                video.setAttribute('autoplay', '');
+                video.setAttribute('playsinline', '');
+                video.setAttribute('webkit-playsinline', '');
+                video.setAttribute('muted', '');
+            }
+            navigator.mediaDevices.getUserMedia({
                 video: { width: 640, height: 480, frameRate: { ideal: 30 } },
-            });
-            startCameraAndGame(streamPromise);
+            })
+                .then((stream) => {
+                    cameraStarted = true;
+                    video.srcObject = stream;
+                    return video.play();
+                })
+                .then(() => {
+                    unlockAudio();
+                    renderLoop();
+                    setupPointerBlade();
+                    return initHandLandmarker();
+                })
+                .then(() => {})
+                .catch((err) => {
+                    cameraStarted = false;
+                    onCameraError(err);
+                });
         });
     }
 
@@ -1040,35 +1069,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         el.textContent = msg;
         el.classList.remove('hidden');
-    }
-
-    async function startCamera(streamPromise) {
-        try {
-            if (!streamPromise) {
-                showCameraError('Seu navegador não suporta câmera. Use Chrome ou Safari.');
-                return;
-            }
-            const stream = await streamPromise;
-            video.srcObject = stream;
-            await video.play();
-            // Desbloquear áudio só depois de ter o stream; no Safari, resume() antes disso consome a ativação e a câmera não pede permissão.
-            unlockAudio();
-            renderLoop();
-            setupPointerBlade();
-            await initHandLandmarker();
-        } catch (err) {
-            console.error('Camera error:', err);
-            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                const msg = !window.isSecureContext
-                    ? 'No Safari a câmera só funciona em HTTPS. Abra o jogo pelo link da Vercel (https://...) ou use localhost.'
-                    : 'Câmera bloqueada. Em Ajustes do Safari > Câmera, permita este site e recarregue a página.';
-                showCameraError(msg);
-            } else if (err.name === 'NotFoundError') {
-                showCameraError('Nenhuma câmera encontrada.');
-            } else {
-                showCameraError('Erro ao ligar a câmera. Recarregue a página.');
-            }
-        }
     }
 
 });
