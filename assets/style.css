@@ -336,16 +336,23 @@ h1 {
 
 /* ── Game Over ── */
 .game-over-overlay {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
     background: rgba(5, 5, 5, 0.92);
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     z-index: 50;
+    padding: max(1rem, var(--safe-top)) max(1rem, var(--safe-right)) max(1rem, var(--safe-bottom)) max(1rem, var(--safe-left));
+    box-sizing: border-box;
     animation: fadeIn 0.5s ease;
 }
 
@@ -403,12 +410,17 @@ h1 {
     letter-spacing: 2px;
 }
 
-/* ── Tutorial inicial ── */
+/* ── Tutorial inicial (fixed para Safari fullscreen) ── */
 .tutorial-overlay {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
     background: rgba(5, 5, 5, 0.94);
+    -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
     display: flex;
     flex-direction: column;
@@ -416,6 +428,8 @@ h1 {
     justify-content: center;
     z-index: 60;
     padding: 1.5rem;
+    padding-top: max(1.5rem, var(--safe-top));
+    padding-bottom: max(1.5rem, var(--safe-bottom));
     box-sizing: border-box;
     animation: fadeIn 0.4s ease;
 }
