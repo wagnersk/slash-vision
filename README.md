@@ -39,8 +39,6 @@ Os dois são necessários: o modelo diz *o quê* detectar; o core (bundle + WASM
 npx serve -p 3333
 ```
 
-Acesse `http://localhost:3333`
-
 ## Deploy na Vercel
 
 O projeto é um site estático. O `vercel.json` já está configurado.
